@@ -1,3 +1,4 @@
+from datetime import datetime
 from app import db
 
 
@@ -14,6 +15,29 @@ class Agendamento(db.Model):
     def __repr__(self):
         return 'Agendamento {}'.format(self.titulo)
 
+    def to_dict(self):
+        data = {
+            'id_agendamento': self.id_agendamento,
+            'titulo': self.titulo,
+            'horario_inicio': self.horario_inicio,
+            'horario_fim': self.horario_fim,
+            'sala': {
+                'id_sala': self.id_sala,
+                'sala_nome': self.sala.sala_nome
+            }
+        }
+        return data
+
+    def from_dict(self, data):
+        for field in ['titulo', 'horario_inicio',
+                      'horario_fim', 'id_sala']:
+            if field in data:
+                if field in ['horario_inicio', 'horario_fim']:
+                    setattr(self, field, datetime.strptime(
+                            data[field], '%d-%m-%Y %H:%M'))
+                else:
+                    setattr(self, field, data[field])
+
 class Sala(db.Model):
     __tablename__ = 'Sala'
 
@@ -26,3 +50,14 @@ class Sala(db.Model):
 
     def __repr__(self):
         return 'Sala {}'.format(self.sala_nome)
+
+    def to_dict(self):
+        data = {
+            'id_sala': self.id_sala,
+            'sala_nome': self.sala_nome
+        }
+        return data
+
+    def from_dict(self, data):
+        if 'sala_nome' in data:
+            setattr(self, 'sala_nome', data['sala_nome'])
