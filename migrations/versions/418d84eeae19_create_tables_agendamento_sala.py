@@ -1,8 +1,8 @@
 """Create-Tables-Agendamento-Sala
 
-Revision ID: 6c2f15280609
+Revision ID: 418d84eeae19
 Revises: 
-Create Date: 2018-12-08 00:16:32.374418
+Create Date: 2018-12-08 20:13:34.410651
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6c2f15280609'
+revision = '418d84eeae19'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,12 +27,11 @@ def upgrade():
     op.create_table('Agendamento',
     sa.Column('id_agendamento', sa.Integer(), nullable=False),
     sa.Column('titulo', sa.String(length=45), nullable=True),
-    sa.Column('horario_inicio', sa.DateTime(), nullable=True),
-    sa.Column('horario_fim', sa.DateTime(), nullable=True),
+    sa.Column('periodo_inicio', sa.DateTime(), nullable=True),
+    sa.Column('periodo_fim', sa.DateTime(), nullable=True),
     sa.Column('id_sala', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['id_sala'], ['Sala.id_sala'], ),
-    sa.PrimaryKeyConstraint('id_agendamento'),
-    sa.UniqueConstraint('titulo')
+    sa.PrimaryKeyConstraint('id_agendamento')
     )
     # ### end Alembic commands ###
 

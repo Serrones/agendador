@@ -1,5 +1,6 @@
+from datetime import datetime
 from flask import jsonify, request
-from sqlalchemy import and_
+from sqlalchemy import and_, or_, extract
 from app import db
 from app.api import bp
 from app.models import Agendamento, Sala
@@ -8,25 +9,38 @@ from app.models import Agendamento, Sala
 # get agendamentos
 @bp.route('/agendamentos', methods=(['GET']))
 def get_agendamentos():
+    # TODO Ajustar soma das queries
+    if request.args:
+        # Caso seja passado parâmetro 'sala', a listagem é filtrada por sala
+        agendamentos = {}
+        if 'sala' in request.args:
+            sala = request.args['sala']
+            agendamentos_sala = Agendamento.query.filter(
+                                Agendamento.id_sala == sala).order_by(
+                                Agendamento.periodo_inicio).all()
+            # agendamentos.update(*agendamentos_sala)
 
-    # Caso seja passado parâmetro 'sala', a listagem é filtrada por sala
-    if 'sala' in request.args:
-        sala = request.args['sala']
-        agendamentos = Agendamento.query.filter(Agendamento.id_sala == sala)
+            return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos_sala]}), 200
 
+        # Caso seja passado parâmetro 'data' (dd-mm-aaaa), a listagem é filtrada por data
+        if 'data' in request.args:
+            data = request.args['data']
+            agendamentos_data = Agendamento.query.filter(and_(
+                    extract('day', Agendamento.periodo_inicio) == data[0:2],
+                    extract('month', Agendamento.periodo_inicio) == data[3:5],
+                    extract('year', Agendamento.periodo_inicio) == data[6:10]
+                    )).order_by(Agendamento.id_sala).order_by(
+                    Agendamento.periodo_inicio).all()
+            # agendamentos.add(*agendamentos_data)
+            return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos_data]}), 200
+
+        # return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
+    else:
+        # Caso não seja passado nenhum parâmetro, serão retornados todos os agendamentos
+        agendamentos = Agendamento.query.order_by(
+                        Agendamento.id_sala).order_by(
+                        Agendamento.periodo_inicio).all()
         return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
-
-    # Caso seja passado parâmetro 'data', a listagem é filtrada por data
-    if 'data' in request.args:
-        data = request.args['data']
-
-
-
-
-    # Caso não seja passado nenhum parâmetro, serão retornados todos os agendamentos
-    agendamentos = Agendamento.query.all()
-
-    return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
 
 
 # create agendamento
@@ -35,8 +49,8 @@ def create_agendamento():
 
     data = request.get_json() or {}
 
-    obrigatorios = ['titulo', 'horario_inicio',
-                    'horario_fim', 'id_sala']
+    obrigatorios = ['titulo', 'periodo_inicio',
+                    'periodo_fim', 'id_sala']
 
     # Verifica campos obrigatórios
     for campo in obrigatorios:
@@ -47,12 +61,21 @@ def create_agendamento():
     # Verifica se a sala existe
     sala = Sala.query.get_or_404(data['id_sala'])
 
-    # TODO Verificação de disponibilidade da sala !!!! Não funciona
     # Verifica se há agenda
-    agenda = Agendamento.query.filter(
+    #TODO ainda tem falha na verificação de horário
+    agenda = Agendamento.query.filter(and_(
+            Agendamento.id_sala == data['id_sala'],
+            extract('month', Agendamento.periodo_inicio) == data['periodo_inicio'][3:5],
+            extract('year', Agendamento.periodo_inicio) == data['periodo_inicio'][6:10],
+            extract('day', Agendamento.periodo_inicio) == data['periodo_inicio'][0:2],
+            extract('hour', Agendamento.periodo_inicio) <= data['periodo_inicio'][11:13],
+            extract('hour', Agendamento.periodo_fim) > data['periodo_inicio'][11:13]).or_(
             and_(Agendamento.id_sala == data['id_sala'],
-            Agendamento.horario_inicio == data['horario_inicio'],
-            Agendamento.horario_fim == data['horario_fim'])).first()
+            extract('month', Agendamento.periodo_inicio) == data['periodo_inicio'][3:5],
+            extract('year', Agendamento.periodo_inicio) == data['periodo_inicio'][6:10],
+            extract('day', Agendamento.periodo_inicio) == data['periodo_inicio'][0:2],
+            extract('hour', Agendamento.periodo_inicio) < data['periodo_fim'][11:13],
+            extract('hour', Agendamento.periodo_fim) >= data['periodo_fim'][11:13]))).all()
 
     if agenda:
         return 'Sala reservada nesse período'
@@ -74,11 +97,13 @@ def update_agendamento(id_agendamento):
     agendamento = Agendamento.query.get_or_404(id_agendamento)
 
     # Verifica se há algum campo inválido na requisição
-    alteraveis = ['titulo', 'horario_inicio',
+    alteraveis = ['titulo', 'data_agendamento', 'horario_inicio',
                     'horario_fim', 'id_sala']
     for campo in data:
         if campo not in alteraveis:
             return 'Campo inválido na requisição'
+
+    #TODO Verifica se entra periodo e se pode alterar
 
     agendamento.from_dict(data)
     db.session.add(agendamento)

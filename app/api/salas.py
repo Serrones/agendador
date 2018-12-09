@@ -3,6 +3,18 @@ from app import db
 from app.api import bp
 from app.models import Sala
 
+
+
+# get salas
+@bp.route('/salas', methods=(['GET']))
+def get_salas():
+
+    # lista todas as salas
+    salas = Sala.query.all()
+
+    return jsonify({'salas': [sala.to_dict() for sala in salas]}), 200
+
+
 # post sala
 @bp.route('/salas', methods=(['POST']))
 def create_sala():

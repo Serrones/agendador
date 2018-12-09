@@ -7,9 +7,9 @@ class Agendamento(db.Model):
 
     # Colunas
     id_agendamento = db.Column(db.Integer, primary_key=True)
-    titulo = db.Column(db.String(45), unique=True)
-    horario_inicio = db.Column(db.DateTime)
-    horario_fim = db.Column(db.DateTime)
+    titulo = db.Column(db.String(45))
+    periodo_inicio = db.Column(db.DateTime)
+    periodo_fim = db.Column(db.DateTime)
     id_sala = db.Column(db.Integer, db.ForeignKey('Sala.id_sala'))
 
     def __repr__(self):
@@ -19,8 +19,8 @@ class Agendamento(db.Model):
         data = {
             'id_agendamento': self.id_agendamento,
             'titulo': self.titulo,
-            'horario_inicio': self.horario_inicio,
-            'horario_fim': self.horario_fim,
+            'periodo_inicio': self.periodo_inicio,
+            'periodo_fim': self.periodo_fim,
             'sala': {
                 'id_sala': self.id_sala,
                 'sala_nome': self.sala.sala_nome
@@ -29,10 +29,10 @@ class Agendamento(db.Model):
         return data
 
     def from_dict(self, data):
-        for field in ['titulo', 'horario_inicio',
-                      'horario_fim', 'id_sala']:
+        for field in ['titulo', 'periodo_inicio',
+                      'periodo_fim', 'id_sala']:
             if field in data:
-                if field in ['horario_inicio', 'horario_fim']:
+                if field in ['periodo_inicio', 'periodo_fim']:
                     setattr(self, field, datetime.strptime(
                             data[field], '%d-%m-%Y %H:%M'))
                 else:
