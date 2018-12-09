@@ -24,7 +24,7 @@ def create_sala():
     # Verifica campo obrigatório
     if 'sala_nome' not in data:
         # TODO retorno de erro
-        return 'Falta campo sala_nome'
+        return 'Falta campo sala_nome', 403
 
     sala = Sala()
     sala.from_dict(data)
@@ -45,7 +45,7 @@ def update_sala(id_sala):
     # Verifica se há algum campo inválido na requisição
     for campo in data:
         if campo != 'sala_nome':
-            return 'Campo {} inválido na requisição'.format(campo)
+            return 'Campo {} inválido na requisição'.format(campo), 403
 
     sala.from_dict(data)
     db.session.add(sala)
@@ -63,7 +63,7 @@ def delete_sala(id_sala):
     # Verifica se há agendamentos para a sala
     # TODO Necessário utilizar o all()?
     if sala.agendamentos.all():
-        return 'Sala não pode ser deletada. Há agendamentos'
+        return 'Sala não pode ser deletada. Há agendamentos', 403
     else:
         db.session.delete(sala)
         db.session.commit()
