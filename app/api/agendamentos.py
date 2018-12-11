@@ -11,7 +11,6 @@ from app.models import Agendamento, Sala
 def get_agendamentos():
     # Caso venha algum parâmetro de busca
     if request.args:
-
         # Caso sejam passados parâmetros 'sala' e 'data', a listagem é filtrada por ambos
         if 'sala' in request.args and 'data' in request.args:
             sala = request.args['sala']
@@ -69,7 +68,7 @@ def create_agendamento():
     for campo in obrigatorios:
         if campo not in data:
             # TODO retorno de erro
-            return 'Falta campo ' + campo, 403
+            return jsonify({'Erro': 'Falta campo ' + campo}), 400
 
     # Verifica se a sala existe
     sala = Sala.query.get_or_404(data['id_sala'])
@@ -78,7 +77,7 @@ def create_agendamento():
     agendamento.from_dict(data)
 
     if agendamento.periodo_inicio > agendamento.periodo_fim:
-        return 'Horário de início é maior que o Horário final', 403
+        return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 400
 
     # Verifica se há agenda
     reservados = Agendamento.query.filter(
@@ -94,7 +93,7 @@ def create_agendamento():
             agenda.append(reserva)
 
     if agenda:
-        return 'Sala reservada nesse período', 403
+        return jsonify({'Erro': 'Sala reservada nesse período'}), 403
 
     db.session.add(agendamento)
     db.session.commit()
@@ -115,7 +114,7 @@ def update_agendamento(id_agendamento):
                   'periodo_fim', 'id_sala']
     for campo in data:
         if campo not in alteraveis:
-            return 'Campo inválido na requisição', 403
+            return jsonify({'Erro': 'Campo inválido na requisição'}), 403
 
     if 'id_sala' in data:
         # Verifica se a sala existe
@@ -124,7 +123,7 @@ def update_agendamento(id_agendamento):
     agendamento.from_dict(data)
 
     if agendamento.periodo_inicio > agendamento.periodo_fim:
-        return 'Horário de início é maior que o Horário final', 403
+        return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 403
 
     # Verifica se há agenda
     reservados = Agendamento.query.filter(and_(
@@ -141,7 +140,7 @@ def update_agendamento(id_agendamento):
             agenda.append(reserva)
 
     if agenda:
-        return 'Sala reservada nesse período', 403
+        return jsonify({'Erro': 'Sala reservada nesse período'}), 403
 
     db.session.add(agendamento)
     db.session.commit()
@@ -157,4 +156,4 @@ def delete_agendamento(id_agendamento):
     db.session.delete(agendamento)
     db.session.commit()
 
-    return 'Agendamento deletado com sucesso', 200
+    return jsonify({'Sucesso': 'Agendamento deletado com sucesso'}), 202
