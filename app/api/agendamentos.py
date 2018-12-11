@@ -6,9 +6,42 @@ from app.api import bp
 from app.models import Agendamento, Sala
 
 
-# get agendamentos
 @bp.route('/agendamentos', methods=(['GET']))
 def get_agendamentos():
+    """
+    @api {get} /agendamentos
+    Retorna lista de Agendamentos
+    @apiName get_agendamentos
+    @apiGroup Agendamento
+
+    @apiParam {Number} [sala] Filtra a listagem por ID da Sala
+    @apiParam {Date} [data] Filtra a listagem por Data (dd-mm-aaaa)
+
+    @apiSuccess {Object[]} agendamentos Lista de Agendamentos
+    @apiSuccess {Number} agendamentos.id_agendamento ID do Agendamento
+    @apiSuccess {Date} agendamentos.periodo_inicio Início do Período Agendado
+    @apiSuccess {Date} agendamentos.periodo_fim Fim do Período Agendado
+    @apiSuccess {String} agendamentos.titulo Título do Agendamento
+    @apiSuccess {Object} agendamentos.sala Sala Agendada
+    @apiSuccess {Number} agendamentos.sala.id_sala ID da Sala Agendada
+    @apiSuccess {String} agendamentos.sala.sala_nome Nome da Sala Agendada
+
+    @apiSuccessExample {json} Objeto Agendamento
+        HTTP/1.1 200 OK
+
+    "agendamentos": [
+        {
+            "id_agendamento": 1,
+            "periodo_fim": "Tue, 15 Jan 2019 14:00:00 GMT",
+            "periodo_inicio": "Tue, 15 Jan 2019 13:00:00 GMT",
+            "sala": {
+                "id_sala": 1,
+                "sala_nome": "Danação"
+                },
+            "titulo": "1"
+        }
+    ]
+    """
     # Caso venha algum parâmetro de busca
     if request.args:
         # Caso sejam passados parâmetros 'sala' e 'data', a listagem é filtrada por ambos
@@ -55,10 +88,33 @@ def get_agendamentos():
         return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
 
 
-# create agendamento
 @bp.route('/agendamentos', methods=(['POST']))
 def create_agendamento():
+    """
+    @api {post} /agendamentos
+    Cria um registro de Agendamento
+    @apiName create_agendamento
+    @apiGroup Agendamento
 
+    @apiParam (Request body) {String} titulo Título do Agendamento
+    @apiParam (Request body) {Number} id_sala ID da Sala do Agendamento
+    @apiParam (Request body) {Date} periodo_inicio Início do Período do Agendamento
+    @apiParam (Request body) {Date} periodo_fim Fim do Período do Agendamento
+
+    @apiExample Exemplo de requisição:
+        curl -H "Content-Type: application/json" \
+             -X POST http://localhost:5000/api/agendamentos \
+             -d '{"titulo": "Reunião", "id_sala": 1,
+                  "periodo_inicio": "15-01-2019 13:00",
+                  "periodo_fim": "15-01-2019 14:00"}'
+
+    @apiSuccess {Object} oret Objeto Agendamneto criado
+        HTTP/1.1 201 Created
+
+    @apiError 400 Campo obrigatório não informado || Horário de início é maior ou igual que o Horário final
+    @apiError 403 Sala reservada nesse período
+    @apiError 404 ID da Sala não encontrado
+    """
     data = request.get_json() or {}
 
     obrigatorios = ['titulo', 'periodo_inicio',
@@ -78,6 +134,9 @@ def create_agendamento():
 
     if agendamento.periodo_inicio > agendamento.periodo_fim:
         return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 400
+
+    if agendamento.periodo_inicio == agendamento.periodo_fim:
+        return jsonify({'Erro': 'Horário de início é igual que o Horário final'}), 400
 
     # Verifica se há agenda
     reservados = Agendamento.query.filter(
@@ -100,10 +159,34 @@ def create_agendamento():
 
     return jsonify(agendamento.to_dict()), 201
 
-    # put agendamento
 
 @bp.route('/agendamentos/<int:id_agendamento>', methods=(['PUT']))
 def update_agendamento(id_agendamento):
+    """
+    @api {put} /agendamentos/:id_agendamento
+    Atualiza dados de um Agendamento por ID
+    @apiName update_agendamento
+    @apiGroup Agendamento
+
+    @apiParam {Number} id_agendamento ID do Agendamento
+
+    @apiParam (Request body) {String} [titulo] Título do Agendamento
+    @apiParam (Request body) {Number} [id_sala] ID da Sala do Agendamento
+    @apiParam (Request body) {Date} [periodo_inicio] Início do Período do Agendamento
+    @apiParam (Request body) {Date} [periodo_fim] Fim do Período do Agendamento
+
+    @apiExample Exemplo de requisição:
+        curl -H "Content-Type: application/json" \
+         -X PUT http://localhost:5000/api/agendamentos/:id_agendamento \
+         -d '{"periodo_fim": "15-01-2019 15:00"}'
+
+    @apiSuccess {Object} oret Objeto Agendamento atualizado
+        HTTP/1.1 200 Ok
+
+    @apiError 400 Campo inválido na requisição || Horário de início é maior ou igual que o Horário final
+    @apiError 403 Sala reservada nesse período
+    @apiError 404 O id_agendamento não foi encontrado || O id_sala não foi encontrado
+    """
 
     data = request.get_json() or {}
 
@@ -114,7 +197,7 @@ def update_agendamento(id_agendamento):
                   'periodo_fim', 'id_sala']
     for campo in data:
         if campo not in alteraveis:
-            return jsonify({'Erro': 'Campo inválido na requisição'}), 403
+            return jsonify({'Erro': 'Campo inválido na requisição'}), 400
 
     if 'id_sala' in data:
         # Verifica se a sala existe
@@ -123,7 +206,11 @@ def update_agendamento(id_agendamento):
     agendamento.from_dict(data)
 
     if agendamento.periodo_inicio > agendamento.periodo_fim:
-        return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 403
+        return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 400
+
+    if agendamento.periodo_inicio == agendamento.periodo_fim:
+        return jsonify({'Erro': 'Horário de início é igual que o Horário final'}), 400
+
 
     # Verifica se há agenda
     reservados = Agendamento.query.filter(and_(
@@ -147,9 +234,25 @@ def update_agendamento(id_agendamento):
 
     return jsonify(agendamento.to_dict()), 200
 
-# delete agendamento
+
 @bp.route('/agendamentos/<int:id_agendamento>', methods=(['DELETE']))
 def delete_agendamento(id_agendamento):
+    """
+    @api {delete} /agendamentos/:id_agendamento
+    Deleção de um Agendamento por ID
+    @apiName delete_agendamento
+    @apiGroup Agendamento
+
+    @apiParam {Number} id_agendamento ID do Agendamento
+
+    @apiExample Exemplo de requisição:
+        curl -X DELETE -i http://localhost:5000/api/agendamentos/:id_agendamento
+
+    @apiSuccess {json} Objeto Agendamento deletado
+        HTTP/1.1 202
+
+    @apiError 404 O id_agendamento não foi encontrado
+    """
 
     agendamento = Agendamento.query.get_or_404(id_agendamento)
 
