@@ -8,10 +8,9 @@ class Config(object):
 
     TESTING = False
 
-    if TESTING == False:
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
             'sqlite:///' + os.path.join(basedir, 'app.db')
-    else:
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'teste.db')
+
+    # SQLALCHEMY_DATABASE_LOG = 'sqlite:///' + os.path.join(basedir, 'log.db')
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
