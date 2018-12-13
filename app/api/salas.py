@@ -1,7 +1,13 @@
+import logging
+
 from flask import jsonify, request
+
 from app import db
 from app.api import bp
 from app.models import Sala
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @bp.route('/salas', methods=(['GET']))
@@ -29,7 +35,7 @@ def get_salas():
     """
     # lista todas as salas
     salas = Sala.query.all()
-
+    logging.info('Listagem de Salas')
     return jsonify({'salas': [sala.to_dict() for sala in salas]}), 200
 
 
@@ -59,18 +65,20 @@ def create_sala():
 
     # Verifica campo obrigatório
     if 'sala_nome' not in data:
+        logging.warning('Sala não criada -- Falta Campo')
         return jsonify({'Erro': 'Falta campo sala_nome'}), 400
 
     existe_sala_nome = Sala.query.filter(Sala.sala_nome == data['sala_nome']).first()
 
     if existe_sala_nome:
+        logging.warning('Sala não criada -- Mesmo Nome de Sala')
         return jsonify({'Erro': 'Já existe sala com este nome'}), 403
 
     sala = Sala()
     sala.from_dict(data)
     db.session.add(sala)
     db.session.commit()
-
+    logging.info('Sala criada')
     return jsonify(sala.to_dict()), 201
 
 
@@ -100,17 +108,21 @@ def update_sala(id_sala):
 
     data = request.get_json() or {}
 
-    sala = Sala.query.get_or_404(id_sala)
+    sala = Sala.query.get(id_sala)
+    if not sala:
+        logging.warning('Sala não encontrada')
+        return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
     # Verifica se há algum campo inválido na requisição
     for campo in data:
         if campo != 'sala_nome':
+            logging.warning('Campo não passado')
             return jsonify({'Erro': 'Campo {} inválido na requisição'.format(campo)}), 400
 
     sala.from_dict(data)
     db.session.add(sala)
     db.session.commit()
-
+    logging.info('Sala atualizada')
     return jsonify(sala.to_dict()), 200
 
 
@@ -134,13 +146,17 @@ def delete_sala(id_sala):
     @apiError 404 O id_sala não foi encontrado
     """
 
-    sala = Sala.query.get_or_404(id_sala)
+    sala = Sala.query.get(id_sala)
+    if not sala:
+        logging.warning('Sala não encontrada')
+        return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
     # Verifica se há agendamentos para a sala
     if sala.agendamentos.all():
+        logging.warning('Sala não deletada -- Há Agendamento')
         return jsonify({'Erro': 'Sala não pode ser deletada. Há agendamentos'}), 403
     else:
         db.session.delete(sala)
         db.session.commit()
-
+        logging.info('Sala deletada')
         return jsonify({'Sucesso': 'Sala deletada'}), 202
