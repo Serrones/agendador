@@ -1,14 +1,11 @@
 import logging
-
 from flask import jsonify, request
-
+from sqlalchemy import and_
 from app import db
 from app.api import bp
 from app.models import Sala
 
-
 logging.basicConfig(level=logging.DEBUG)
-
 
 @bp.route('/salas', methods=(['GET']))
 def get_salas():
@@ -33,7 +30,6 @@ def get_salas():
             ]
         }
     """
-    # lista todas as salas
     salas = Sala.query.all()
     logging.info('Listagem de Salas')
     return jsonify({'salas': [sala.to_dict() for sala in salas]}), 200
@@ -57,13 +53,21 @@ def create_sala():
     @apiSuccess {Object} oret Objeto Sala criado
         HTTP/1.1 201 Created
 
+    @apiSuccessExample {json} Objeto Sala
+        HTTP/1.1 201 Created
+        {
+            "salas": [
+                {
+                    "id_sala": 1,
+                    "sala_nome": "Sala 1"
+                }
+            ]
+        }
     @apiError 400 Campo obrigatório não informado
     @apiError 403 Registro já existe
-
     """
     data = request.get_json() or {}
 
-    # Verifica campo obrigatório
     if 'sala_nome' not in data:
         logging.warning('Sala não criada -- Falta Campo')
         return jsonify({'Erro': 'Falta campo sala_nome'}), 400
@@ -102,10 +106,19 @@ def update_sala(id_sala):
     @apiSuccess {Object} oret Objeto Sala atualizado
         HTTP/1.1 200 Ok
 
+    @apiSuccessExample {json} Objeto Sala
+        HTTP/1.1 200 OK
+        {
+            "salas": [
+                {
+                    "id_sala": 1,
+                    "sala_nome": "Sala 1"
+                }
+            ]
+        }
     @apiError 404 O id_sala não foi encontrado
     @apiError 400 Campo inválido na requisição
     """
-
     data = request.get_json() or {}
 
     sala = Sala.query.get(id_sala)
@@ -113,11 +126,18 @@ def update_sala(id_sala):
         logging.warning('Sala não encontrada')
         return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
-    # Verifica se há algum campo inválido na requisição
     for campo in data:
         if campo != 'sala_nome':
             logging.warning('Campo não passado')
             return jsonify({'Erro': 'Campo {} inválido na requisição'.format(campo)}), 400
+
+    existe_sala_nome = Sala.query.filter(and_(
+                        Sala.sala_nome == data['sala_nome'],
+                        Sala.id_sala != id_sala)).first()
+
+    if existe_sala_nome:
+        logging.warning('Sala não alterada -- Mesmo Nome de Sala')
+        return jsonify({'Erro': 'Já existe sala com este nome'}), 403
 
     sala.from_dict(data)
     db.session.add(sala)
@@ -145,13 +165,11 @@ def delete_sala(id_sala):
     @apiError 403 O id_sala não pode ser deletado
     @apiError 404 O id_sala não foi encontrado
     """
-
     sala = Sala.query.get(id_sala)
     if not sala:
         logging.warning('Sala não encontrada')
         return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
-    # Verifica se há agendamentos para a sala
     if sala.agendamentos.all():
         logging.warning('Sala não deletada -- Há Agendamento')
         return jsonify({'Erro': 'Sala não pode ser deletada. Há agendamentos'}), 403

@@ -1,0 +1,8 @@
+# .coveragerc to control coverage.py
+[run]
+branch = True
+omit =
+    # omit anything in a .env directory
+    */.env/*
+    # omit this single file
+    tests.py

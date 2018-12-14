@@ -34,49 +34,61 @@ def get_agendamentos():
 
     @apiSuccessExample {json} Objeto Agendamento
         HTTP/1.1 200 OK
-
     "agendamentos": [
         {
             "id_agendamento": 1,
-            "periodo_fim": "Tue, 15 Jan 2019 14:00:00 GMT",
+            "titulo": "Reunião Equipe X",
             "periodo_inicio": "Tue, 15 Jan 2019 13:00:00 GMT",
+            "periodo_fim": "Tue, 15 Jan 2019 14:00:00 GMT",
             "sala": {
                 "id_sala": 1,
-                "sala_nome": "Danação"
-                },
-            "titulo": "1"
+                "sala_nome": "1"
+            }
         }
     ]
     """
-    # Caso venha algum parâmetro de busca
     if request.args:
-        filtros = []
-        # Caso seja passado parâmetro 'sala', a listagem é filtrada por sala
-        if 'sala' in request.args:
-            logging.info('Listagem de Agendamentos -- Filtro por Sala')
+        if 'sala' in request.args and 'data' in request.args:
             sala = request.args['sala']
-            filtros.extend(Agendamento.query.filter(
-                            Agendamento.id_sala == sala)
-            )
+            s = Sala.query.get(sala)
+            if not s:
+                logging.warning('Sala não encontrada')
+                return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
+            else:
+                data = request.args['data']
+                agendamentos_data = Agendamento.query.filter(and_(
+                        Agendamento.id_sala == sala,
+                        extract('day', Agendamento.periodo_inicio) == data[0:2],
+                        extract('month', Agendamento.periodo_inicio) == data[3:5],
+                        extract('year', Agendamento.periodo_inicio) == data[6:10]
+                        )).order_by(Agendamento.id_sala).order_by(
+                        Agendamento.periodo_inicio).all()
+                logging.info('Listagem de Agendamentos -- Filtro por Data e Sala')
+                return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos_data]}), 200
 
-        # Caso seja passado parâmetro 'data' (dd-mm-aaaa),
-        # a listagem é filtrada por data
+        if 'sala' in request.args:
+            sala = request.args['sala']
+            s = Sala.query.get(sala)
+            if not s:
+                logging.warning('Sala não encontrada')
+                return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
+            else:
+                agendamentos_sala = Agendamento.query.filter(
+                                    Agendamento.id_sala == sala).order_by(
+                                    Agendamento.periodo_inicio).all()
+                logging.info('Listagem de Agendamentos -- Filtro por Sala')
+                return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos_sala]}), 200
+
         if 'data' in request.args:
-            logging.info('Listagem de Agendamentos -- Filtro por Data')
             data = request.args['data']
-            filtros.extend(Agendamento.query.filter(and_(
+            agendamentos_data = Agendamento.query.filter(and_(
                     extract('day', Agendamento.periodo_inicio) == data[0:2],
                     extract('month', Agendamento.periodo_inicio) == data[3:5],
                     extract('year', Agendamento.periodo_inicio) == data[6:10]
-            )))
-
-        parametros = list(set(filtros))
-        agendamentos = Agendamento.query.filter(*parametros).join(
-                        Agendamento.sala).order_by(
-                        Sala.sala_nome).order_by(
-                        Agendamento.periodo_inicio).all()
-        return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
-
+                    )).order_by(Agendamento.id_sala).order_by(
+                    Agendamento.periodo_inicio).all()
+            logging.info('Listagem de Agendamentos -- Filtro por Data')
+            return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos_data]}), 200
     else:
         # Caso não seja passado nenhum parâmetro, serão retornados todos os agendamentos
         agendamentos = Agendamento.query.order_by(
@@ -84,7 +96,6 @@ def get_agendamentos():
                         Agendamento.periodo_inicio).all()
         logging.info('Listagem de Agendamentos')
         return jsonify({'agendamentos': [agendamento.to_dict() for agendamento in agendamentos]}), 200
-
 
 @bp.route('/agendamentos', methods=(['POST']))
 def create_agendamento():
@@ -102,13 +113,27 @@ def create_agendamento():
     @apiExample Exemplo de requisição:
         curl -H "Content-Type: application/json" \
              -X POST http://localhost:5000/api/agendamentos \
-             -d '{"titulo": "Reunião", "id_sala": 1,
+             -d '{"titulo": "Reunião Equipe X", "id_sala": 1,
                   "periodo_inicio": "15-01-2019 13:00",
                   "periodo_fim": "15-01-2019 14:00"}'
 
     @apiSuccess {Object} oret Objeto Agendamneto criado
         HTTP/1.1 201 Created
 
+    @apiSuccessExample {json} Objeto Agendamento
+        HTTP/1.1 201 Created
+    "agendamentos": [
+        {
+            "id_agendamento": 1,
+            "titulo": "Reunião Equipe X",
+            "periodo_inicio": "Tue, 15 Jan 2019 13:00:00 GMT",
+            "periodo_fim": "Tue, 15 Jan 2019 14:00:00 GMT",
+            "sala": {
+                "id_sala": 1,
+                "sala_nome": "1"
+            }
+        }
+    ]
     @apiError 400 Campo obrigatório não informado || Horário de início é maior ou igual que o Horário final
     @apiError 403 Sala reservada nesse período
     @apiError 404 ID da Sala não encontrado
@@ -118,13 +143,11 @@ def create_agendamento():
     obrigatorios = ['titulo', 'periodo_inicio',
                     'periodo_fim', 'id_sala']
 
-    # Verifica campos obrigatórios
     for campo in obrigatorios:
         if campo not in data:
-            logging.info('Agendamento não criado -- Falta Campo')
+            logging.warning('Agendamento não criado -- Falta Campo')
             return jsonify({'Erro': 'Falta campo ' + campo}), 400
 
-    # Verifica se a sala existe
     sala = Sala.query.get(data['id_sala'])
     if not sala:
         logging.warning('Agendamento não criado -- Sala não encontrada')
@@ -132,7 +155,7 @@ def create_agendamento():
 
     agendamento = Agendamento()
     agendamento.from_dict(data)
-
+    # verifica conflito de horário
     if agendamento.periodo_inicio > agendamento.periodo_fim:
         logging.warning('Agendamento não criado -- Hora começo maior que Hora término')
         return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 400
@@ -187,11 +210,24 @@ def update_agendamento(id_agendamento):
     @apiSuccess {Object} oret Objeto Agendamento atualizado
         HTTP/1.1 200 Ok
 
+    @apiSuccessExample {json} Objeto Agendamento
+        HTTP/1.1 200 OK
+    "agendamentos": [
+        {
+            "id_agendamento": 1,
+            "titulo": "Reunião Equipe X",
+            "periodo_inicio": "Tue, 15 Jan 2019 13:00:00 GMT",
+            "periodo_fim": "Tue, 15 Jan 2019 14:00:00 GMT",
+            "sala": {
+                "id_sala": 1,
+                "sala_nome": "1"
+            }
+        }
+    ]
     @apiError 400 Campo inválido na requisição || Horário de início é maior ou igual que o Horário final
     @apiError 403 Sala reservada nesse período
     @apiError 404 O id_agendamento não foi encontrado || O id_sala não foi encontrado
     """
-
     data = request.get_json() or {}
 
     agendamento = Agendamento.query.get(id_agendamento)
@@ -199,7 +235,6 @@ def update_agendamento(id_agendamento):
         logging.warning('Agendamento não encontrado')
         return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
-    # Verifica se há algum campo inválido na requisição
     alteraveis = ['titulo', 'periodo_inicio',
                   'periodo_fim', 'id_sala']
     for campo in data:
@@ -208,21 +243,19 @@ def update_agendamento(id_agendamento):
             return jsonify({'Erro': 'Campo inválido na requisição'}), 400
 
     if 'id_sala' in data:
-        # Verifica se a sala existe
         sala = Sala.query.get(data['id_sala'])
         if not sala:
             logging.warning('Agendamento não atualizado -- Sala não encontrada')
             return jsonify({'Erro': 'O id_sala não foi encontrado'}), 404
 
     agendamento.from_dict(data)
-
+    # Verifica conflito de horário
     if agendamento.periodo_inicio > agendamento.periodo_fim:
         logging.warning('Agendamento não atualizado -- Hora começo maior que Hora término')
         return jsonify({'Erro': 'Horário de início é maior que o Horário final'}), 400
     if agendamento.periodo_inicio == agendamento.periodo_fim:
         logging.warning('Agendamento não atualizado -- Hora começo e término iguais')
         return jsonify({'Erro': 'Horário de início é igual que o Horário final'}), 400
-
 
     # Verifica se há agenda
     reservados = Agendamento.query.filter(and_(
@@ -266,7 +299,6 @@ def delete_agendamento(id_agendamento):
 
     @apiError 404 O id_agendamento não foi encontrado
     """
-
     agendamento = Agendamento.query.get(id_agendamento)
     if not agendamento:
         logging.warning('Agendamento não encontrado')

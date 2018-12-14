@@ -1,4 +1,4 @@
-define({ "api": [
+[
   {
     "type": "post",
     "url": "/agendamentos",
@@ -42,7 +42,7 @@ define({ "api": [
     "examples": [
       {
         "title": "Exemplo de requisição:",
-        "content": "curl -H \"Content-Type: application/json\" \\\n     -X POST http://localhost:5000/api/agendamentos \\\n     -d '{\"titulo\": \"Reunião\", \"id_sala\": 1,\n          \"periodo_inicio\": \"15-01-2019 13:00\",\n          \"periodo_fim\": \"15-01-2019 14:00\"}'",
+        "content": "curl -H \"Content-Type: application/json\" \\\n     -X POST http://localhost:5000/api/agendamentos \\\n     -d '{\"titulo\": \"Reunião Equipe X\", \"id_sala\": 1,\n          \"periodo_inicio\": \"15-01-2019 13:00\",\n          \"periodo_fim\": \"15-01-2019 14:00\"}'",
         "type": "json"
       }
     ],
@@ -57,7 +57,14 @@ define({ "api": [
             "description": "<p>Objeto Agendamneto criado HTTP/1.1 201 Created</p>"
           }
         ]
-      }
+      },
+      "examples": [
+        {
+          "title": "Objeto Agendamento",
+          "content": "    HTTP/1.1 201 Created\n\"agendamentos\": [\n    {\n        \"id_agendamento\": 1,\n        \"titulo\": \"Reunião Equipe X\",\n        \"periodo_inicio\": \"Tue, 15 Jan 2019 13:00:00 GMT\",\n        \"periodo_fim\": \"Tue, 15 Jan 2019 14:00:00 GMT\",\n        \"sala\": {\n            \"id_sala\": 1,\n            \"sala_nome\": \"1\"\n        }\n    }\n]",
+          "type": "json"
+        }
+      ]
     },
     "error": {
       "fields": {
@@ -232,7 +239,7 @@ define({ "api": [
       "examples": [
         {
           "title": "Objeto Agendamento",
-          "content": "    HTTP/1.1 200 OK\n\n\"agendamentos\": [\n    {\n        \"id_agendamento\": 1,\n        \"periodo_fim\": \"Tue, 15 Jan 2019 14:00:00 GMT\",\n        \"periodo_inicio\": \"Tue, 15 Jan 2019 13:00:00 GMT\",\n        \"sala\": {\n            \"id_sala\": 1,\n            \"sala_nome\": \"Danação\"\n            },\n        \"titulo\": \"1\"\n    }\n]",
+          "content": "    HTTP/1.1 200 OK\n\"agendamentos\": [\n    {\n        \"id_agendamento\": 1,\n        \"titulo\": \"Reunião Equipe X\",\n        \"periodo_inicio\": \"Tue, 15 Jan 2019 13:00:00 GMT\",\n        \"periodo_fim\": \"Tue, 15 Jan 2019 14:00:00 GMT\",\n        \"sala\": {\n            \"id_sala\": 1,\n            \"sala_nome\": \"1\"\n        }\n    }\n]",
           "type": "json"
         }
       ]
@@ -308,7 +315,14 @@ define({ "api": [
             "description": "<p>Objeto Agendamento atualizado HTTP/1.1 200 Ok</p>"
           }
         ]
-      }
+      },
+      "examples": [
+        {
+          "title": "Objeto Agendamento",
+          "content": "    HTTP/1.1 200 OK\n\"agendamentos\": [\n    {\n        \"id_agendamento\": 1,\n        \"titulo\": \"Reunião Equipe X\",\n        \"periodo_inicio\": \"Tue, 15 Jan 2019 13:00:00 GMT\",\n        \"periodo_fim\": \"Tue, 15 Jan 2019 14:00:00 GMT\",\n        \"sala\": {\n            \"id_sala\": 1,\n            \"sala_nome\": \"1\"\n        }\n    }\n]",
+          "type": "json"
+        }
+      ]
     },
     "error": {
       "fields": {
@@ -375,7 +389,14 @@ define({ "api": [
             "description": "<p>Objeto Sala criado HTTP/1.1 201 Created</p>"
           }
         ]
-      }
+      },
+      "examples": [
+        {
+          "title": "Objeto Sala",
+          "content": "HTTP/1.1 201 Created\n{\n    \"salas\": [\n        {\n            \"id_sala\": 1,\n            \"sala_nome\": \"Sala 1\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
     },
     "error": {
       "fields": {
@@ -550,7 +571,14 @@ define({ "api": [
             "description": "<p>Objeto Sala atualizado HTTP/1.1 200 Ok</p>"
           }
         ]
-      }
+      },
+      "examples": [
+        {
+          "title": "Objeto Sala",
+          "content": "HTTP/1.1 200 OK\n{\n    \"salas\": [\n        {\n            \"id_sala\": 1,\n            \"sala_nome\": \"Sala 1\"\n        }\n    ]\n}",
+          "type": "json"
+        }
+      ]
     },
     "error": {
       "fields": {
@@ -574,4 +602,4 @@ define({ "api": [
     "filename": "app/api/salas.py",
     "groupTitle": "Sala"
   }
-] });
+]
