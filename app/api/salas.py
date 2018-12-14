@@ -162,7 +162,7 @@ def delete_sala(id_sala):
     @apiSuccess {json} Objeto Sala deletado
         HTTP/1.1 202
 
-    @apiError 403 O id_sala não pode ser deletado
+    @apiError 403 O id_sala não pode ser deletado -- Há agendamentos
     @apiError 404 O id_sala não foi encontrado
     """
     sala = Sala.query.get(id_sala)

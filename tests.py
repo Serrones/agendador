@@ -199,6 +199,12 @@ class TestAgendamentos(TestCase):
                         data=json.dumps(sala),
                         content_type='application/json'
                     )
+        reserva = {'titulo': 'Reunião', 'periodo_inicio': '01-01-2019 08:00',
+                        'periodo_fim': '01-01-2019 09:00', 'id_sala': 1}
+        agendamento = self.client.post('api/agendamentos',
+                            data=json.dumps(reserva),
+                            content_type='application/json'
+                    )
         response = self.client.get('/api/agendamentos?sala=1')
         self.assertEqual(response.status_code, 200)
 
@@ -254,6 +260,45 @@ class TestAgendamentos(TestCase):
                             content_type='application/json'
                     )
         response = self.client.get('/api/agendamentos?sala=10&data=01-01-2019')
+        self.assertEqual(response.status_code, 404)
+
+    def test_lista_sem_agendamentos_parametros_data_sala_correta(self):
+        sala = {'sala_nome': 'Sala 1'}
+        self.client.post('api/salas',
+            data=json.dumps(sala),
+            content_type='application/json'
+        )
+        reserva = {'titulo': 'Reunião', 'periodo_inicio': '01-01-2019 08:00',
+                        'periodo_fim': '01-01-2019 09:00', 'id_sala': 1}
+        agendamento = self.client.post('api/agendamentos',
+                            data=json.dumps(reserva),
+                            content_type='application/json'
+                    )
+        response = self.client.get('/api/agendamentos?sala=1&data=02-01-2019')
+        self.assertEqual(response.status_code, 404)
+
+    def test_lista_sem_agendamentos_parametros_data_correta(self):
+        sala = {'sala_nome': 'Sala 1'}
+        self.client.post('api/salas',
+            data=json.dumps(sala),
+            content_type='application/json'
+        )
+        reserva = {'titulo': 'Reunião', 'periodo_inicio': '01-01-2019 08:00',
+                        'periodo_fim': '01-01-2019 09:00', 'id_sala': 1}
+        agendamento = self.client.post('api/agendamentos',
+                            data=json.dumps(reserva),
+                            content_type='application/json'
+                    )
+        response = self.client.get('/api/agendamentos?data=02-01-2019')
+        self.assertEqual(response.status_code, 404)
+
+    def test_lista_sem_agendamentos_parametros_sala_correta(self):
+        sala = {'sala_nome': 'Sala 1'}
+        self.client.post('api/salas',
+            data=json.dumps(sala),
+            content_type='application/json'
+        )
+        response = self.client.get('/api/agendamentos?sala=1')
         self.assertEqual(response.status_code, 404)
 
     """

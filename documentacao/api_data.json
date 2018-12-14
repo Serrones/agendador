@@ -466,7 +466,7 @@
             "group": "Error 4xx",
             "optional": false,
             "field": "403",
-            "description": "<p>O id_sala não pode ser deletado</p>"
+            "description": "<p>O id_sala não pode ser deletado -- Há agendamentos</p>"
           },
           {
             "group": "Error 4xx",
