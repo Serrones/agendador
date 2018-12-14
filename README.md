@@ -71,14 +71,14 @@ ou
 coverage run tests.py
 ```
 
-Relatório de Cobertura
+Relatório de Cobertura:
 ```
 coverage report
 ```
 
 ## Documentação
 
-Abrir arquivo `index.html` em um browser
+Abrir arquivo `index.html` em um browser:
 ```
 documentacao/index.html
 ```
